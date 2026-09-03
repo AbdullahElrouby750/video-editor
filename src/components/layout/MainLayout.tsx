@@ -1,19 +1,18 @@
 import React from "react";
 import ToolBar from "./ToolBar";
+import SidebarPanel from "./SidebarPanel";
 
 function MainLayout() {
-  return <div className=" w-full h-full bg-brand grid grid-cols-4 relative">
+  return <div className=" w-full h-full bg-brand flex relative transition-all duration-200">
     
     <ToolBar />
 
 
     {/* horizontal wrapper: sidebar)*/}
-    <div className= " h-full col-span-1 bg-green-500">
-
-    </div>
+    <SidebarPanel />
 
     {/* horizontal wrapper: main content */}
-    <div className= " h-full col-span-3 bg-blue-500 flex flex-col">
+    <div className= " h-full bg-blue-500 flex flex-1 flex-col">
 
         {/* canvas */}
         <div className=" w-full h-2/3 bg-amber-400"></div>
