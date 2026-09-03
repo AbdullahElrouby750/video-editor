@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import SidebarContent from "../sidebar/components/sidebarContent";
+import SidebarContent from "../sidebar/components/SidebarContent";
 import ResizeHandle from "../sidebar/components/ResizeHandle";
 
 function SidebarPanel() {
