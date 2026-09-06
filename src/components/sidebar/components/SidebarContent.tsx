@@ -40,16 +40,16 @@ function SidebarContent() {
     const handleMouseMove = (mouseEvent: MouseEvent) => {
         const deltaY = mouseEvent.clientY - startY;
 
+        const audheight = isCollapsed.aud ? HEADER_HEIGHT : audHeight;
         if (section === "vid" && vidRef.current) {
-            const audheight = isCollapsed.aud ? HEADER_HEIGHT : audHeight;
-            const vidMaxHeight = containerHeight - imgHeight - HEADER_HEIGHT;
+            const vidMaxHeight = containerHeight - imgHeight - audheight;
 
             let newHeight = vidHeight + deltaY;
             newHeight = Math.max(HEADER_HEIGHT, Math.min(newHeight, vidMaxHeight));
 
             vidRef.current.style.height = `${newHeight}px`;
     } else if (section === "img" && imaRef.current) {
-            const imaMaxHeight = containerHeight - vidHeight - HEADER_HEIGHT;
+            const imaMaxHeight = containerHeight - vidHeight - audheight;
             
             let newHeight = imgHeight + deltaY;
             newHeight = Math.max(HEADER_HEIGHT, Math.min(newHeight, imaMaxHeight));

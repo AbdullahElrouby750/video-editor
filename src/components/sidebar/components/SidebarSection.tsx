@@ -17,7 +17,7 @@ function SidebarSection({
 }: sidebarSectionProps) {
   return (
     <div
-      className={` w-full ${title === 'Audio' ? 'flex-1' : 'h-1/3'}  flex flex-col justify-start items-center`}
+      className={` w-full ${title === 'Audio' ? 'flex-1' : 'h-1/3'} min-h-1/5 flex flex-col justify-start items-center`}
       ref={ref}
     >
       <header
