@@ -16,7 +16,7 @@ function SidebarPanel() {
         setIsCollapsed(false);
       } else {
         sidebarRef.current.style.width = "0px";
-        sidebarRef.current.style.minWidth = "8px";
+        sidebarRef.current.style.minWidth = "12px";
         sidebarRef.current.style.transition = "width 0.15s ease-in-out";
         setIsCollapsed(true);
       }
@@ -36,20 +36,7 @@ function SidebarPanel() {
       mouseMove.stopPropagation();
       console.log("mouseMove.clientX", mouseMove.clientX);
       if (sidebarRef.current) {
-        const SNAP_THRESHOLD = 240;
-
-        if (mouseMove.clientX < SNAP_THRESHOLD) {
-          // 2. We hit the threshold! Force it to collapse
-          if (!isCollapsed) {
-            handleToggleCollapse();
-          }
-
-          // 3. CRITICAL: Stop the drag immediately so it doesn't infinitely toggle
-          document.removeEventListener("mousemove", handleMouseMove);
-          document.removeEventListener("mouseup", handleMouseUp);
-        } else {
-          sidebarRef.current.style.width = `${mouseMove.clientX}px`;
-        }
+        sidebarRef.current.style.width = `${mouseMove.clientX}px`;
       }
     };
 
@@ -69,13 +56,13 @@ function SidebarPanel() {
   return (
     <aside
       ref={sidebarRef}
-      className=" h-full max-w-2/3 min-w-1/5 w-100 bg-green-500 relative"
+      className=" h-full max-w-1/2 min-w-1/5 w-100 bg-green-500 relative"
     >
       <ResizeHandle
         startDrag={handleMouseDown}
         toggleCollapse={handleToggleCollapse}
       />
-      <SidebarContent />
+      {!isCollapsed && <SidebarContent />}
     </aside>
   );
 }

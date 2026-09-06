@@ -5,7 +5,7 @@ import SidebarPanel from "./SidebarPanel";
 function MainLayout() {
   return <div className=" w-full h-full bg-brand flex relative transition-all duration-200">
     
-    <ToolBar />
+    {/* <ToolBar /> */}
 
 
     {/* horizontal wrapper: sidebar)*/}
