@@ -17,7 +17,7 @@ function SidebarSection({
 }: sidebarSectionProps) {
   return (
     <div
-      className={` w-full ${title === 'Audio' ? 'flex-1' : 'h-1/3'} min-h-1/5 flex flex-col justify-start items-center`}
+      className={` w-full ${title === 'Audio' ? 'flex-1' : 'h-1/3 shrink-0'} border-2 border-black min-h-1/5 flex flex-col justify-start items-center`}
       ref={ref}
     >
       <header
@@ -27,7 +27,7 @@ function SidebarSection({
         {title}
       </header>
       {!isCollapsed && (
-        <div className=" border-b-2 w-full flex-1 flex flex-col justify-start items-center overflow-y-auto">
+        <div className=" border-b-2 w-full flex-1 flex flex-col justify-start items-center overflow-y-auto border-2 border-red-700">
           {children}
         </div>
       )}
