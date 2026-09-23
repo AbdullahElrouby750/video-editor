@@ -2,250 +2,146 @@ import React from "react";
 import SidebarSection from "./SidebarSection";
 import VerticalHandler from "./VerticalHandler";
 
+// SidebarContent.tsx
+type Id = "vid" | "img" | "aud";
+const ORDER: Id[] = ["vid", "img", "aud"];
+const HEADER_HEIGHT = 24;
+const BORDER = 4; // border-2 top + bottom
+const COLLAPSED = HEADER_HEIGHT + BORDER;
+const MIN_OPEN = 80; // px, replaces min-h-1/5 + getComputedStyle
+const MIN_W = MIN_OPEN - BORDER; // same minimum, in weight units
+
+const TITLES: Record<Id, string> = {
+  vid: "Videos",
+  img: "Images",
+  aud: "Audio",
+};
+
 function SidebarContent() {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const vidRef = React.useRef<HTMLDivElement>(null);
-  const imgRef = React.useRef<HTMLDivElement>(null);
-  const audRef = React.useRef<HTMLDivElement>(null);
-
-  const vidLastHeightRef = React.useRef<number>(200);
-  const imgLastHeightRef = React.useRef<number>(200);
-  const audLastHeightRef = React.useRef<number>(200);
-
-  const [isCollapsed, setIsCollapsed] = React.useState({
+  const refs = {
+    vid: React.useRef<HTMLDivElement>(null),
+    img: React.useRef<HTMLDivElement>(null),
+    aud: React.useRef<HTMLDivElement>(null),
+  };
+  const [collapsed, setCollapsed] = React.useState<Record<Id, boolean>>({
     vid: false,
     img: false,
     aud: false,
   });
+  const [weights, setWeights] = React.useState<Record<Id, number>>({
+    vid: 1,
+    img: 1,
+    aud: 1,
+  });
+  const [dragging, setDragging] = React.useState(false);
 
-  const HEADER_HEIGHT = 24;
+  const toggle = (id: Id) => setCollapsed((p) => ({ ...p, [id]: !p[id] }));
 
-  const getPixelValue = (value: string | null | undefined) => {
-    const parsed = Number.parseFloat(value ?? "");
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-
-  const handleToggleCollapse = (section: "vid" | "img" | "aud") => {
-    if (
-      !containerRef.current ||
-      !vidRef.current ||
-      !imgRef.current ||
-      !audRef.current
-    )
-      return;
-
-    if (section === "vid") {
-      if (isCollapsed.vid) {
-        vidRef.current.style.minHeight = `20%`;
-        vidRef.current.style.maxHeight = `none`;
-        vidRef.current.style.height = `${vidLastHeightRef.current}px`;
-        // vidRef.current.style.transition = "none";
-      } else {
-        vidLastHeightRef.current = vidRef.current.offsetHeight;
-        vidRef.current.style.height = `${HEADER_HEIGHT}px`;
-        vidRef.current.style.minHeight = `${HEADER_HEIGHT}px`;
-        vidRef.current.style.maxHeight = `${HEADER_HEIGHT}px`;
-        vidRef.current.style.transition = "all 0.15s ease-in-out";
-      }
-      setIsCollapsed((prev) => ({ ...prev, vid: !prev.vid }));
-    }
-
-    if (section === "img") {
-      if (isCollapsed.img) {
-        imgRef.current.style.minHeight = `20%`;
-        imgRef.current.style.maxHeight = `none`;
-        imgRef.current.style.height = `${imgLastHeightRef.current}px`;
-        // imgRef.current.style.transition = "none";
-      } else {
-
-        if (isCollapsed.aud && !isCollapsed.vid) {
-          const currentAudHeight = audRef.current.offsetHeight - HEADER_HEIGHT;
-          const vidNewHeight = vidRef.current.offsetHeight + currentAudHeight;
-          vidRef.current.style.height = `${vidNewHeight}px`;
-        } else {
-          imgLastHeightRef.current = imgRef.current.offsetHeight;
-        }
-        imgRef.current.style.height = `${HEADER_HEIGHT}px`;
-        imgRef.current.style.minHeight = `${HEADER_HEIGHT}px`;
-        imgRef.current.style.maxHeight = `${HEADER_HEIGHT}px`;
-
-        imgRef.current.style.transition = "all 0.15s ease-in-out";
-      }
-      setIsCollapsed((prev) => ({ ...prev, img: !prev.img }));
-    }
-
-    if (section === "aud") {
-      if (isCollapsed.aud) {
-        audRef.current.style.minHeight = `20%`;
-        audRef.current.style.maxHeight = `none`;
-        audRef.current.style.height = `${audLastHeightRef.current}px`;
-        // audRef.current.style.transition = "none";
-      } else {
-
-        if (isCollapsed.img && isCollapsed.vid) {
-          audLastHeightRef.current = audRef.current.offsetHeight;
-        } else {
-          const currentAudHeight = audRef.current.offsetHeight - HEADER_HEIGHT ;
-          if (!isCollapsed.img) {
-            const newImgHeight = imgRef.current.offsetHeight + currentAudHeight;
-            imgRef.current.style.height = `${newImgHeight}px`;
-          } else{
-            const newVidHeight = vidRef.current.offsetHeight + currentAudHeight;
-            vidRef.current.style.height = `${newVidHeight}px`;
-          }
-        }
-        audRef.current.style.height = `${HEADER_HEIGHT}px`;
-        audRef.current.style.minHeight = `${HEADER_HEIGHT}px`;
-        audRef.current.style.maxHeight = `${HEADER_HEIGHT}px`;
-        audRef.current.style.transition = "all 0.15s ease-in-out";
-      }
-      setIsCollapsed((prev) => ({ ...prev, aud: !prev.aud }));
-    }
-  };
-
-  const handleDragStart = (e: React.MouseEvent, section: "vid" | "img") => {
+  const startDrag = (e: React.MouseEvent, above: Id, below: Id) => {
     e.preventDefault();
-    e.stopPropagation();
-
-    if (
-      !containerRef.current ||
-      !vidRef.current ||
-      !imgRef.current ||
-      !audRef.current
-    )
-      return;
-
     const startY = e.clientY;
-    const containerHeight = containerRef.current.clientHeight;
-    const vidHeight = vidRef.current.clientHeight;
-    const imgHeight = imgRef.current.clientHeight;
-    const audHeight = audRef.current.clientHeight;
 
-    const vidMinHeight = isCollapsed.vid
-      ? HEADER_HEIGHT
-      : (getPixelValue(window.getComputedStyle(vidRef.current).minHeight) /
-          100) *
-        containerHeight;
-    const imgMinHeight = isCollapsed.img
-      ? HEADER_HEIGHT
-      : (getPixelValue(window.getComputedStyle(imgRef.current).minHeight) /
-          100) *
-        containerHeight;
-    const audMinHeight = isCollapsed.aud
-      ? HEADER_HEIGHT
-      : (getPixelValue(window.getComputedStyle(audRef.current).minHeight) /
-          100) *
-        containerHeight;
+    const open = ORDER.filter((id) => !collapsed[id]);
 
-    const handleMouseMove = (mouseEvent: MouseEvent) => {
-      const deltaY = mouseEvent.clientY - startY;
-      if (
-        section === "vid" &&
-        vidRef.current &&
-        imgRef.current &&
-        audRef.current
-      ) {
-        const imgCapacity = Math.max(0, imgHeight - imgMinHeight);
-        const audCapacity = Math.max(0, audHeight - audMinHeight);
-        const minDelta = vidMinHeight - vidHeight;
-        const maxDelta = imgCapacity + audCapacity;
+    // 1. snapshot real heights (border excluded) as weights
+    const pxSum = open.reduce(
+      (s, id) => s + refs[id].current!.offsetHeight - BORDER,
+      0,
+    );
+    const wSum = open.reduce((s, id) => s + weights[id], 0);
+    const scale = pxSum / wSum; // keeps collapsed sections' remembered ratio consistent
+    const snap = {} as Record<Id, number>;
+    ORDER.forEach((id) => {
+      snap[id] = collapsed[id]
+        ? weights[id] * scale
+        : refs[id].current!.offsetHeight - BORDER;
+    });
 
-        const clampedDelta = Math.max(minDelta, Math.min(deltaY, maxDelta));
+    // 2. donor chains, nearest first
+    const iA = open.indexOf(above);
+    const iB = open.indexOf(below);
+    const downDonors = open.slice(iB); // below, then further down
+    const upDonors = open.slice(0, iA + 1).reverse(); // above, then further up
 
-        // Positive delta: expand Videos.
-        // Negative delta: expand Images and shrink Videos.
-        const imgDelta = Math.min(clampedDelta, imgCapacity);
-        const audDelta = Math.max(0, clampedDelta - imgCapacity);
+    const capacity = (ids: Id[]) =>
+      ids.reduce((s, id) => s + Math.max(0, snap[id] - MIN_W), 0);
+    const maxDown = capacity(downDonors);
+    const maxUp = capacity(upDonors);
 
-        vidRef.current.style.height = `${vidHeight + clampedDelta}px`;
-        imgRef.current.style.height = `${imgHeight - imgDelta}px`;
-        audRef.current.style.height = `${audHeight - audDelta}px`;
-      } else if (
-        section === "img" &&
-        imgRef.current &&
-        vidRef.current &&
-        audRef.current
-      ) {
-        const imgShrinkCapacity = Math.max(0, imgHeight - imgMinHeight);
-        const audShrinkCapacity = Math.max(0, audHeight - audMinHeight);
-        const vidShrinkCapacity = Math.max(0, vidHeight - vidMinHeight);
-
-        if (deltaY >= 0) {
-          // Dragging down expands Images by shrinking Audio.
-          const audShrink = Math.min(deltaY, audShrinkCapacity);
-
-          imgRef.current.style.height = `${imgHeight + audShrink}px`;
-          audRef.current.style.height = `${audHeight - audShrink}px`;
-        } else {
-          // Dragging up shrinks Images first, then Videos if Images is at minimum.
-          const requestedShrink = -deltaY;
-          const imgShrink = Math.min(requestedShrink, imgShrinkCapacity);
-          const remainingShrink = requestedShrink - imgShrink;
-          const vidShrink = Math.min(remainingShrink, vidShrinkCapacity);
-
-          imgRef.current.style.height = `${imgHeight - imgShrink}px`;
-          vidRef.current.style.height = `${vidHeight - vidShrink}px`;
-          audRef.current.style.height = `${audHeight + imgShrink + vidShrink}px`;
-        }
+    // takes `amount` px from donors in order, each down to MIN_W at most
+    const drain = (donors: Id[], amount: number, next: Record<Id, number>) => {
+      let left = amount;
+      for (const id of donors) {
+        const take = Math.min(left, Math.max(0, snap[id] - MIN_W));
+        next[id] = snap[id] - take;
+        left -= take;
       }
     };
 
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+    const onMove = (ev: MouseEvent) => {
+      const d = Math.max(-maxUp, Math.min(ev.clientY - startY, maxDown));
+      const next = { ...snap };
 
-      if (section === "vid") {
-        vidLastHeightRef.current =
-          vidRef.current?.offsetHeight || vidLastHeightRef.current;
-      } else if (section === "img") {
-        imgLastHeightRef.current =
-          imgRef.current?.offsetHeight || imgLastHeightRef.current;
+      if (d >= 0) {
+        // dragging down: `above` grows, donors below give
+        next[above] = snap[above] + d;
+        drain(downDonors, d, next);
+      } else {
+        // dragging up: `below` grows, donors above give
+        next[below] = snap[below] - d;
+        drain(upDonors, -d, next);
       }
-      if (!isCollapsed.aud) {
-        audLastHeightRef.current =
-          audRef.current?.offsetHeight || audLastHeightRef.current;
-      }
+      setWeights(next);
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    const onUp = () => {
+      setDragging(false);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    setDragging(true);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   };
+
+  const nextOpen = (i: number) =>
+    ORDER.slice(i + 1).find((id) => !collapsed[id]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full flex-1 flex flex-col justify-stretch"
-    >
-      {/* the accordion wrapped here */}
-      <SidebarSection
-        title="Videos"
-        isCollapsed={false}
-        onToggle={() => handleToggleCollapse("vid")}
-        ref={vidRef}
-      >vid</SidebarSection>
-
-      {((!isCollapsed.vid && !isCollapsed.img) ||
-        (!isCollapsed.vid && !isCollapsed.aud)) && (
-        <VerticalHandler handleMouseDown={handleDragStart} section="vid" />
-      )}
-
-      <SidebarSection
-        title="Images"
-        isCollapsed={false}
-        onToggle={() => handleToggleCollapse("img")}
-        ref={imgRef}
-      >img</SidebarSection>
-
-      {!isCollapsed.aud && (
-        <VerticalHandler handleMouseDown={handleDragStart} section="img" />
-      )}
-
-      <SidebarSection
-        title="Audio"
-        isCollapsed={false}
-        onToggle={() => handleToggleCollapse("aud")}
-        ref={audRef}
-      >aud</SidebarSection>
+    <div className="relative h-full flex-1 flex flex-col">
+      {ORDER.map((id, i) => {
+        const below = !collapsed[id] ? nextOpen(i) : undefined; // handle only between open sections
+        return (
+          <React.Fragment key={id}>
+            <SidebarSection
+              ref={refs[id]}
+              title={TITLES[id]}
+              isCollapsed={collapsed[id]}
+              onToggle={() => toggle(id)}
+              style={
+                collapsed[id]
+                  ? {
+                      flex: `0 0 ${COLLAPSED}px`,
+                      transition: "flex 0.15s ease-in-out",
+                    }
+                  : {
+                      flex: `${weights[id]} 1 0px`,
+                      minHeight: MIN_OPEN,
+                      transition: dragging ? "none" : "flex 0.15s ease-in-out",
+                    }
+              }
+            >
+              {id}
+            </SidebarSection>
+            {below && (
+              <VerticalHandler
+                handleMouseDown={(e) => startDrag(e, id, below)}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
